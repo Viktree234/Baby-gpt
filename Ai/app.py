@@ -185,7 +185,7 @@ def chat():
     max_prob = max(proba)
     predicted_label = model.classes_[proba.argmax()]
 
-    if max_prob < 0.4:  # low confidence
+    if max_prob < 0.2:  # low confidence
         reply = random.choice(fallbacks)
     else:
         reply = random.choice(training_data[predicted_label]["responses"])
