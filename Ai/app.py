@@ -5,6 +5,9 @@ import joblib
 import random
 import os
 import re
+import threading
+import time
+import requests
 
 app = Flask(__name__)
 
@@ -201,8 +204,23 @@ def chat():
 
     return jsonify({"reply": reply})
 
-
 # -------------------- run --------------------
 
+def start_pinger():
+    """
+    Background thread that pings the app every 5 minutes
+    to prevent Render free-tier from idling.
+    """
+    while True:
+        try:
+            url = os.environ.get("PING_URL")  # set your Render URL as env var
+            if url:
+                requests.get(url)
+        except Exception as e:
+            print(f"Pinger error: {e}")
+        time.sleep(300)  # 5 minutes
+
 if __name__ == "__main__":
+    # start auto-pinger in background
+    threading.Thread(target=start_pinger, daemon=True).start()
     app.run(host="0.0.0.0", port=5000)
