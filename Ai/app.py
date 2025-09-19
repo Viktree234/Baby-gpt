@@ -13,7 +13,8 @@ from dotenv import load_dotenv
 # -------------------- setup --------------------
 
 load_dotenv()  # load variables from .env
-TOGETHER_API_KEY = os.getenv("TOGETHER_API_KEY")
+HF_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
+HF_MODEL = os.getenv("HUGGINGFACE_MODEL", "mistralai/Mistral-7B-Instruct-v0.2")
 
 app = Flask(__name__)
 
@@ -40,7 +41,6 @@ training_data = {
         "examples": ["thanks", "thank you", "thx"],
         "responses": ["You’re welcome 🙌", "No problem!", "Anytime!"]
     }
-    # ... keep rest of your dataset here ...
 }
 
 # -------------------- model --------------------
@@ -94,30 +94,26 @@ def chat():
 
     reply = None
 
-    # --- try Together AI first ---
-    if TOGETHER_API_KEY:
+    # --- try Hugging Face first ---
+    if HF_API_KEY:
         try:
-            url = "https://api.together.xyz/v1/chat/completions"
-            headers = {
-                "Authorization": f"Bearer {TOGETHER_API_KEY}",
-                "Content-Type": "application/json"
+            headers = {"Authorization": f"Bearer {HF_API_KEY}"}
+            payload = {
+                "inputs": f"User: {user_message}\nAssistant:",
+                "parameters": {"max_new_tokens": 200, "temperature": 0.8}
             }
-            data = {
-                "model": "mistralai/Mistral-7B-Instruct-v0.1",
-                "messages": [
-                    {"role": "system", "content": "You are Baby GPT, a fun and friendly chatbot."},
-                    {"role": "user", "content": user_message}
-                ],
-                "max_tokens": 200,
-                "temperature": 0.8
-            }
-            response = requests.post(url, headers=headers, json=data, timeout=10)
+            response = requests.post(
+                f"https://api-inference.huggingface.co/models/{HF_MODEL}",
+                headers=headers,
+                json=payload,
+                timeout=15
+            )
             result = response.json()
 
-            if "choices" in result and len(result["choices"]) > 0:
-                reply = result["choices"][0]["message"]["content"]
+            if isinstance(result, list) and "generated_text" in result[0]:
+                reply = result[0]["generated_text"].replace(f"User: {user_message}\nAssistant:", "").strip()
         except Exception as e:
-            print(f"Together API error: {e}")
+            print(f"Hugging Face API error: {e}")
 
     # --- fallback to local model ---
     if not reply:
