@@ -174,6 +174,15 @@ fallbacks = [
 
 # -------------------- api --------------------
 
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({
+        "message": "Welcome to Baby GPT 🤖 API!",
+        "endpoints": {
+            "chat": "POST /chat (send JSON: { 'message': 'your text' })"
+        }
+    })
+
 @app.route("/chat", methods=["POST"])
 def chat():
     user_message = clean_text(request.json.get("message", ""))
@@ -191,6 +200,7 @@ def chat():
         reply = random.choice(training_data[predicted_label]["responses"])
 
     return jsonify({"reply": reply})
+
 
 # -------------------- run --------------------
 
