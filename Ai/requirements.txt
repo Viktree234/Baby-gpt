@@ -3,3 +3,4 @@ joblib
 flask
 gunicorn
 requests
+python-dotenv
